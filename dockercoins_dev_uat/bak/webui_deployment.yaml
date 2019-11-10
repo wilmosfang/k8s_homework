@@ -1,0 +1,44 @@
+apiVersion: {{ .Values.apiVersion }}
+kind: Deployment
+metadata:
+  name: {{ .Values.image.webui }}
+  namespace: {{ .Values.namespaces }}
+  labels:
+    servicename: {{ .Values.image.webui }}
+{{ include "dockercoins.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      servicename: {{ .Values.image.webui }}
+  strategy:
+    rollingUpdate:
+      maxSurge: {{ .Values.maxSurge }}
+      maxUnavailable: {{ .Values.maxUnavailable }}
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        servicename: {{ .Values.image.webui }}
+{{ include "dockercoins.labels" . | indent 8 }}
+    spec:
+      containers:
+        - name: {{ .Values.image.webui }}
+          image: "{{ .Values.image.repository }}/{{ .Values.image.webui }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: SERVICE_NAME
+            value: {{ .Values.image.webui }}
+{{ include "dockercoins.env" . | indent 10 }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+#          livenessProbe:
+#            httpGet:
+#              path: /
+#              port: http
+#          readinessProbe:
+#            httpGet:
+#              path: /
+#              port: http

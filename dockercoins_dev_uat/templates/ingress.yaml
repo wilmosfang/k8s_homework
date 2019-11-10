@@ -1,0 +1,27 @@
+{{- if .Values.ingress.enabled -}}
+{{- $imageName := .Values.image.name }}
+{{- if eq $imageName "webui" }}
+{{- $ns := .Values.environment }}
+{{- $svcPort := .Values.service.port -}}
+apiVersion: {{ .Values.apiVersion }}
+kind: Ingress
+metadata:
+  name: {{ $ns }}-{{ $imageName }}-ingress
+  labels:
+    servicename: {{ $imageName }}-ingress
+{{ include "dockercoins.labels" . | indent 4 }}
+spec:
+  rules:
+  {{- range .Values.ingress.hosts }}
+    - host: {{ $ns }}-{{- .host }}
+      http:
+        paths:
+        {{- range .paths }}
+          - path: {{ . }}
+            backend:
+              serviceName: {{ $imageName }}
+              servicePort: {{ $svcPort }}
+        {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}

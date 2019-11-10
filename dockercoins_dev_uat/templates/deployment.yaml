@@ -1,0 +1,99 @@
+{{- $imageName := .Values.image.name }}
+{{- $ns := .Values.environment }}
+
+apiVersion: {{ .Values.apiVersion }}
+{{- if ne $imageName "rng" }}
+kind: Deployment
+{{- else }}
+kind: DaemonSet
+{{- end }}
+
+metadata:
+  name: {{ $imageName  }}
+  namespace: {{ $ns }}
+  labels:
+    servicename: {{ $imageName }}
+{{ include "dockercoins.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      servicename: {{ $imageName }}
+  strategy:
+    rollingUpdate:
+      maxSurge: {{ .Values.maxSurge }}
+      maxUnavailable: {{ .Values.maxUnavailable }}
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        servicename: {{ $imageName }}
+{{ include "dockercoins.labels" . | indent 8 }}
+    spec:
+      containers:
+        - name: {{ $imageName }}
+          {{- if ne $imageName "redis" }}
+          image: "{{ .Values.image.repository }}/{{ $imageName }}:{{ .Values.image.tag }}"
+          {{- else }}
+          image: "{{ $imageName }}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: SERVICE_NAME
+            value: {{ $imageName }}
+{{ include "dockercoins.env" . | indent 10 }}
+          ports:
+              {{- if ne $imageName "redis" }}
+            - name: http
+              containerPort: 80
+              {{- else }}
+            - name: tcp
+              containerPort: 6379
+              {{- end}}
+              protocol: TCP
+          livenessProbe:
+            exec:
+              command:
+              - cat
+{{if eq $imageName "redis"}}
+              - /etc/passwd
+{{else if eq $imageName "hasher"}}
+              - /hasher.rb
+{{else if eq $imageName "rng"}}
+              - /rng.py
+{{else if eq $imageName "webui"}}
+              - /webui.js
+{{else if eq $imageName "worker"}}
+              - /worker.py
+{{end}}
+{{ include "dockercoins.health" . | indent 12 }}
+          readinessProbe:
+{{if eq $imageName "worker"}}
+            exec:
+              command:
+              - ls
+              - /worker.py  
+{{else}}
+            tcpSocket:
+{{if eq $imageName "redis"}}
+              port: 6379
+{{else}}
+              port: 80
+{{end}}
+{{end}}
+{{ include "dockercoins.health" . | indent 12 }}
+#          livenessProvenessProbe:
+#            httpGet:
+#              path: /
+#              port: http
+#          readinessProbe:
+#            httpGet:
+#              path: /
+#              port: httpbe:
+#            httpGet:
+#              path: /
+#              port: http
+#          readinessProbe:
+#            httpGet:
+#              path: /
+#              port: http

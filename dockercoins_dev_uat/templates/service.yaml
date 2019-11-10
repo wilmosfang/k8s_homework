@@ -1,0 +1,35 @@
+{{- if .Values.service.enabled }}
+{{- $imageName := .Values.image.name }}
+{{- if ne $imageName "worker" }}
+{{- $ns := .Values.environment }}
+apiVersion: {{ .Values.apiVersionService }}
+kind: Service
+metadata:
+  name: {{ $imageName }}
+  namespace: {{ $ns }}
+  labels:
+    servicename: {{ $imageName }}
+{{ include "dockercoins.labels" . | indent 4 }}
+spec:
+  {{- if ne $imageName "webui" }}
+  type: ClusterIP
+  {{- else }}
+  type: NodePort
+  externalTrafficPolicy: {{ .Values.service.externalTrafficPolicy }}
+  {{- end }}
+  ports:
+    {{- if ne $imageName "redis"}}
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
+      protocol: TCP
+      name: http
+    {{- else }}
+    - port: {{ .Values.service.redis_port }}
+      targetPort: {{ .Values.service.redis_port }}
+      protocol: TCP
+      name: tcp
+    {{- end}}
+  selector:
+    servicename: {{ $imageName }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,17 @@
+apiVersion: {{ .Values.apiVersionService }}
+kind: Service
+metadata:
+  name: {{ .Values.image.redis }}
+  namespace: {{ .Values.namespaces }}
+  labels:
+    servicename: {{ .Values.image.redis }}
+{{ include "dockercoins.labels" . | indent 4 }}
+spec:
+  type: {{ .Values.service.typeC }}
+  ports:
+    - port: {{ .Values.service.redis_port }}
+      targetPort: {{ .Values.service.redis_port }}
+      protocol: TCP
+      name: redis
+  selector:
+    servicename: {{ .Values.image.redis }}

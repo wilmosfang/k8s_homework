@@ -1,0 +1,45 @@
+apiVersion: {{ .Values.apiVersion }}
+kind: Deployment
+metadata:
+  name: {{ .Values.image.redis }}
+  namespace: {{ .Values.namespaces }}
+  labels:
+    servicename: {{ .Values.image.redis }}
+{{ include "dockercoins.labels" . | indent 4 }}
+spec:
+#  replicas: {{ .Values.replicaCount }}
+  replicas: 1
+  selector:
+    matchLabels:
+      servicename: {{ .Values.image.redis }}
+  strategy:
+    rollingUpdate:
+      maxSurge: {{ .Values.maxSurge }}
+      maxUnavailable: {{ .Values.maxUnavailable }}
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        servicename: {{ .Values.image.redis }}
+{{ include "dockercoins.labels" . | indent 8 }}
+    spec:
+      containers:
+        - name: {{ .Values.image.redis }}
+          image: "{{ .Values.image.redis }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: SERVICE_NAME
+            value: {{ .Values.image.redis }}
+{{ include "dockercoins.env" . | indent 10 }}
+          ports:
+            - name: tcp
+              containerPort: 6379
+              protocol: TCP
+#          livenessProbe:
+#            httpGet:
+#              path: /
+#              port: http
+#          readinessProbe:
+#            httpGet:
+#              path: /
+#              port: http
